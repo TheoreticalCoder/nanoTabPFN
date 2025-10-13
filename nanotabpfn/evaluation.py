@@ -20,6 +20,18 @@ TOY_TASKS_CLASSIFICATION = [
     9946, # breast_cancer
 ]
 
+# we hardcode the list here because even if the tasks are cached
+# openml.study.get_suite("tabarena-v0.1") might fail if there are connection issues
+TABARENA_TASKS = [
+    363612, 363613, 363614, 363615, 363616, 363618, 363619, 363620,
+    363621, 363623, 363624, 363625, 363626, 363627, 363628, 363629,
+    363630, 363631, 363632, 363671, 363672, 363673, 363674, 363675,
+    363676, 363677, 363678, 363679, 363681, 363682, 363683, 363684,
+    363685, 363686, 363689, 363691, 363693, 363694, 363696, 363697,
+    363698, 363699, 363700, 363702, 363704, 363705, 363706, 363707,
+    363708, 363711, 363712
+]
+
 @torch.no_grad()
 def get_openml_predictions(
         *,

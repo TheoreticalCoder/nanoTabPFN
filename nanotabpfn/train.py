@@ -34,7 +34,6 @@ def train(model: NanoTabPFNModel, prior: DataLoader, criterion: nn.CrossEntropyL
     """
     if multi_gpu:
         model = nn.DataParallel(model)
-    # print(f"Using a Transformer with {sum(p.numel() for p in model.parameters())/1000/1000:.{2}f} M parameters")
     if callbacks is None:
         callbacks = []
     if not device:
@@ -84,6 +83,13 @@ def train(model: NanoTabPFNModel, prior: DataLoader, criterion: nn.CrossEntropyL
 
             training_state = {
                 'epoch': epoch,
+                'architecture': {
+                    'num_layers': int((model.module if multi_gpu else model).num_layers),
+                    'embedding_size': int((model.module if multi_gpu else model).embedding_size),
+                    'num_attention_heads': int((model.module if multi_gpu else model).num_attention_heads),
+                    'mlp_hidden_size': int((model.module if multi_gpu else model).mlp_hidden_size),
+                    'num_outputs': int((model.module if multi_gpu else model).num_outputs)
+                },
                 'model': (model.module if multi_gpu else model).state_dict(),
                 'optimizer': optimizer.state_dict()
             }

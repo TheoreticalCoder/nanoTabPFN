@@ -14,25 +14,19 @@ from sklearn.preprocessing import OrdinalEncoder, FunctionTransformer
 from nanotabpfn.model import NanoTabPFNModel
 from nanotabpfn.utils import get_default_device
 
-
 def init_model_from_state_dict_file(file_path):
     """
-    infers model architecture from state dict, instantiates the architecture and loads the weights
+    reads model architecture from state dict, instantiates the architecture and loads the weights
     """
     state_dict = torch.load(file_path, map_location=torch.device('cpu'))
-    embedding_size = state_dict['feature_encoder.linear_layer.weight'].shape[0]
-    mlp_hidden_size = state_dict['decoder.linear1.weight'].shape[0]
-    num_outputs = state_dict['decoder.linear2.weight'].shape[0]
-    num_layers = sum('self_attn_between_datapoints.in_proj_weight' in k for k in state_dict)
-    num_heads = state_dict['transformer_encoder.transformer_blocks.0.self_attn_between_datapoints.in_proj_weight'].shape[1]//64
     model = NanoTabPFNModel(
-        num_attention_heads=num_heads,
-        embedding_size=embedding_size,
-        mlp_hidden_size=mlp_hidden_size,
-        num_layers=num_layers,
-        num_outputs=num_outputs,
+        num_attention_heads=state_dict['architecture']['num_attention_heads'],
+        embedding_size=state_dict['architecture']['embedding_size'],
+        mlp_hidden_size=state_dict['architecture']['mlp_hidden_size'],
+        num_layers=state_dict['architecture']['num_layers'],
+        num_outputs=state_dict['architecture']['num_outputs'],
     )
-    model.load_state_dict(torch.load(file_path, map_location='cpu'))
+    model.load_state_dict(state_dict['model'])
     return model
 
 # doing these as lambdas would cause NanoTabPFNClassifier to not be pickle-able,

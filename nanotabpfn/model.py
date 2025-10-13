@@ -12,6 +12,10 @@ class NanoTabPFNModel(nn.Module):
     def __init__(self, embedding_size: int, num_attention_heads: int, mlp_hidden_size: int, num_layers: int, num_outputs: int):
         """ Initializes the feature/target encoder, transformer stack and decoder """
         super().__init__()
+        self.embedding_size = embedding_size
+        self.num_attention_heads = num_attention_heads
+        self.mlp_hidden_size = mlp_hidden_size
+        self.num_layers = num_layers
         self.num_outputs = num_outputs
         self.feature_encoder = FeatureEncoder(embedding_size)
         self.target_encoder = TargetEncoder(embedding_size)
@@ -166,8 +170,8 @@ class TransformerEncoderLayer(nn.Module):
                  layer_norm_eps: float = 1e-5, batch_first: bool = True,
                  device=None, dtype=None):
         super().__init__()
-        self.self_attn_between_datapoints = MultiheadAttention(embedding_size, nhead, batch_first=batch_first, device=device, dtype=dtype)
-        self.self_attn_between_features = MultiheadAttention(embedding_size, nhead, batch_first=batch_first, device=device, dtype=dtype)
+        self.self_attention_between_datapoints = MultiheadAttention(embedding_size, nhead, batch_first=batch_first, device=device, dtype=dtype)
+        self.self_attention_between_features = MultiheadAttention(embedding_size, nhead, batch_first=batch_first, device=device, dtype=dtype)
 
         self.linear1 = Linear(embedding_size, mlp_hidden_size, device=device, dtype=dtype)
         self.linear2 = Linear(mlp_hidden_size, embedding_size, device=device, dtype=dtype)
@@ -195,7 +199,7 @@ class TransformerEncoderLayer(nn.Module):
         src = src.reshape(batch_size*rows_size, col_size, embedding_size)
         @memory_chunking(num_mem_chunks)
         def feature_attention(x):
-            return self.self_attn_between_features(x, x, x)[0] + x
+            return self.self_attention_between_features(x, x, x)[0] + x
         src = feature_attention(src)
         src = src.reshape(batch_size, rows_size, col_size, embedding_size)
         src = self.norm1(src)
@@ -204,9 +208,9 @@ class TransformerEncoderLayer(nn.Module):
         src = src.reshape(batch_size*col_size, rows_size, embedding_size)
         @memory_chunking(num_mem_chunks)
         def datapoint_attention(x):
-            x_left = self.self_attn_between_datapoints(x[:, :single_eval_position], x[:, :single_eval_position], x[:, :single_eval_position])[0]
+            x_left = self.self_attention_between_datapoints(x[:, :single_eval_position], x[:, :single_eval_position], x[:, :single_eval_position])[0]
             # test data attends to the training data
-            x_right = self.self_attn_between_datapoints(x[:, single_eval_position:], x[:, :single_eval_position], x[:, :single_eval_position])[0]
+            x_right = self.self_attention_between_datapoints(x[:, single_eval_position:], x[:, :single_eval_position], x[:, :single_eval_position])[0]
             return torch.cat([x_left, x_right], dim=1) + x
         src = datapoint_attention(src)
         src = src.reshape(batch_size, col_size, rows_size, embedding_size)
